@@ -111,6 +111,20 @@ class float4_e2m1fn : public mxfloat4_base<float4_e2m1fn> {
       : float4_e2m1fn(ConvertFrom(f8)) {}
 };
 
+class float4_e1m2fn : public mxfloat4_base<float4_e1m2fn> {
+  // Exponent: 2, Mantissa: 1, bias: 1.
+  // Extended range: no inf, no NaN.
+  using Base = mxfloat4_base<float4_e1m2fn>;
+  friend class float8_internal::float8_base<float4_e1m2fn>;
+  using Base::Base;
+
+ public:
+  template <typename T, float8_internal::RequiresIsDerivedFromFloat8Base<T> = 0>
+  explicit EIGEN_DEVICE_FUNC float4_e1m2fn(T f8)
+      : float4_e1m2fn(ConvertFrom(f8)) {}
+};
+
+
 // Common properties for specializing std::numeric_limits.
 template <int E, int M>
 struct numeric_limits_mxfloat_tpl {
@@ -265,6 +279,46 @@ struct numeric_limits_float4_e2m1fn : public numeric_limits_mxfloat_tpl<2, 1> {
   }
 };
 
+struct numeric_limits_float4_e1m2fn : public numeric_limits_mxfloat_tpl<2, 1> {
+  // 1.0 * 2^(0) = 1
+  static constexpr float4_e1m2fn min() {
+    return float4_e1m2fn::FromRep(0b00'10);
+  }
+  // -1.5 * 2^(2) = -6
+  static constexpr float4_e1m2fn lowest() {
+    return float4_e1m2fn::FromRep(0b1'1'11);
+  }
+  // 1.5 * 2^(2) = 6
+  static constexpr float4_e1m2fn max() {
+    return float4_e1m2fn::FromRep(0b0'1'11);
+  }
+  // 0.5 * 2^(0) = 0.5
+  static constexpr float4_e1m2fn epsilon() {
+    return float4_e1m2fn::FromRep(0b0'0'01);
+  }
+  // 1.0 * 2^(0) = 1
+  static constexpr float4_e1m2fn round_error() {
+    return float4_e1m2fn::FromRep(0b0'0'10);
+  }
+  // 0.5 * 2^(0) = 0.5
+  static constexpr float4_e1m2fn denorm_min() {
+    return float4_e1m2fn::FromRep(0b0'0'01);
+  }
+
+  // Conversion from NaNs is implementation-defined (by MX specification).
+  static constexpr float4_e1m2fn quiet_NaN() {
+    return float4_e1m2fn::FromRep(0b1'0'00);
+  }
+  static constexpr float4_e1m2fn signaling_NaN() {
+    return float4_e1m2fn::FromRep(0b1'0'00);
+  }
+  static constexpr float4_e1m2fn infinity() {
+    return float4_e1m2fn::FromRep(0b0'1'11);
+  }
+};
+
+
+
 // Free-functions for use with ADL and in Eigen.
 constexpr inline float6_e2m3fn abs(const float6_e2m3fn& a) {
   return float6_e2m3fn::FromRep(a.rep() & 0b0'11'111);
@@ -284,6 +338,13 @@ constexpr inline float4_e2m1fn abs(const float4_e2m1fn& a) {
 
 constexpr inline bool(isnan)(const float4_e2m1fn& a) { return false; }
 
+constexpr inline float4_e1m2fn abs(const float4_e1m2fn& a) {
+  return float4_e1m2fn::FromRep(a.rep() & 0b0'11'1);
+}
+
+constexpr inline bool(isnan)(const float4_e1m2fn& a) { return false; }
+
+
 // Define traits required for floating point conversion.
 template <typename T, int E, int M>
 struct TraitsBase : public float8_internal::TraitsBase<T> {
@@ -300,7 +361,7 @@ struct TraitsBase : public float8_internal::TraitsBase<T> {
 using float6_e2m3fn = mxfloat_internal::float6_e2m3fn;
 using float6_e3m2fn = mxfloat_internal::float6_e3m2fn;
 using float4_e2m1fn = mxfloat_internal::float4_e2m1fn;
-
+using float4_e1m2fn = mxfloat_internal::float4_e1m2fn;
 }  // namespace ml_dtypes
 
 // Standard library overrides.
@@ -317,6 +378,11 @@ struct numeric_limits<ml_dtypes::mxfloat_internal::float6_e3m2fn>
 template <>
 struct numeric_limits<ml_dtypes::mxfloat_internal::float4_e2m1fn>
     : public ml_dtypes::mxfloat_internal::numeric_limits_float4_e2m1fn {};
+
+
+template <>
+struct numeric_limits<ml_dtypes::mxfloat_internal::float4_e1m2fn>
+    : public ml_dtypes::mxfloat_internal::numeric_limits_float4_e1m2fn {};
 
 }  // namespace std
 
@@ -336,6 +402,11 @@ template <>
 struct Traits<float4_e2m1fn>
     : public mxfloat_internal::TraitsBase<float4_e2m1fn, 2, 1> {};
 
+
+template <>
+struct Traits<float4_e1m2fn>
+    : public mxfloat_internal::TraitsBase<float4_e1m2fn, 1, 2> {};
+
 }  // namespace float8_internal
 }  // namespace ml_dtypes
 
@@ -352,6 +423,7 @@ namespace numext {
 MXFLOAT_EIGEN_SIGNBIT_IMPL(ml_dtypes::float6_e2m3fn)
 MXFLOAT_EIGEN_SIGNBIT_IMPL(ml_dtypes::float6_e3m2fn)
 MXFLOAT_EIGEN_SIGNBIT_IMPL(ml_dtypes::float4_e2m1fn)
+MXFLOAT_EIGEN_SIGNBIT_IMPL(ml_dtypes::float4_e1m2fn)
 
 #undef MXFLOAT_EIGEN_SIGNBIT_IMPL
 
@@ -377,6 +449,7 @@ namespace internal {
 MXFLOAT_EIGEN_ISFINITE_IMPL(ml_dtypes::float6_e2m3fn)
 MXFLOAT_EIGEN_ISFINITE_IMPL(ml_dtypes::float6_e3m2fn)
 MXFLOAT_EIGEN_ISFINITE_IMPL(ml_dtypes::float4_e2m1fn)
+MXFLOAT_EIGEN_ISFINITE_IMPL(ml_dtypes::float4_e1m2fn)
 
 #undef MXFLOAT_EIGEN_ISFINITE_IMPL
 

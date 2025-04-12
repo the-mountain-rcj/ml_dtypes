@@ -217,6 +217,19 @@ struct TypeDescriptor<float4_e2m1fn> : CustomFloatType<float4_e2m1fn> {
 };
 
 template <>
+struct TypeDescriptor<float4_e1m2fn> : CustomFloatType<float4_e1m2fn> {
+  typedef float4_e1m2fn T;
+  static constexpr bool is_floating = true;
+  static constexpr bool is_integral = false;
+  static constexpr const char* kTypeName = "float4_e1m2fn";
+  static constexpr const char* kQualifiedTypeName = "ml_dtypes.float4_e1m2fn";
+  static constexpr const char* kTpDoc = "float4_e1m2fn floating-point values";
+  static constexpr char kNpyDescrKind = 'V';
+  static constexpr char kNpyDescrType = '0';
+  static constexpr char kNpyDescrByteorder = '=';
+};
+
+template <>
 struct TypeDescriptor<float8_e8m0fnu> : CustomFloatType<float8_e8m0fnu> {
   typedef float8_e8m0fnu T;
   static constexpr bool is_floating = true;

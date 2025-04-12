@@ -16,6 +16,7 @@
 
 from ml_dtypes._ml_dtypes_ext import bfloat16
 from ml_dtypes._ml_dtypes_ext import float4_e2m1fn
+from ml_dtypes._ml_dtypes_ext import float4_e1m2fn
 from ml_dtypes._ml_dtypes_ext import float6_e2m3fn
 from ml_dtypes._ml_dtypes_ext import float6_e3m2fn
 from ml_dtypes._ml_dtypes_ext import float8_e3m4
@@ -30,6 +31,7 @@ import numpy as np
 
 _bfloat16_dtype = np.dtype(bfloat16)
 _float4_e2m1fn_dtype = np.dtype(float4_e2m1fn)
+_float4_e1m2fn_dtype = np.dtype(float4_e1m2fn)
 _float6_e2m3fn_dtype = np.dtype(float6_e2m3fn)
 _float6_e3m2fn_dtype = np.dtype(float6_e3m2fn)
 _float8_e3m4_dtype = np.dtype(float8_e3m4)
@@ -58,6 +60,16 @@ class _Float4E2m1fnMachArLike:
     self.smallest_normal = float4_e2m1fn(smallest_normal)
     smallest_subnormal = float.fromhex("0x0.8p0")
     self.smallest_subnormal = float4_e2m1fn(smallest_subnormal)
+
+
+class _Float4E1m2fnMachArLike:
+
+  def __init__(self):
+    smallest_normal = float.fromhex("0x1p0") #rcj
+    self.smallest_normal = float4_e1m2fn(smallest_normal)
+    smallest_subnormal = float.fromhex("0x0.8p0")
+    self.smallest_subnormal = float4_e1m2fn(smallest_subnormal)
+
 
 
 class _Float6E2m3fnMachArLike:
@@ -238,6 +250,48 @@ class finfo(np.finfo):  # pylint: disable=invalid-name,missing-class-docstring
     obj._str_resolution = float_to_str(obj.resolution)
     # pylint: enable=protected-access
     return obj
+
+  @staticmethod
+  def _float4_e1m2fn_finfo():
+    eps = float.fromhex("0x0.8p0")  # 0.5 rcj
+    max_ = float.fromhex("0x1.8p2")  # 6.0
+
+    obj = object.__new__(np.finfo)
+    obj.dtype = _float4_e1m2fn_dtype
+    obj.bits = 4
+    obj.eps = eps
+    obj.epsneg = eps
+    obj.machep = -1
+    obj.negep = -1
+    obj.max = float4_e1m2fn(max_)
+    obj.min = float4_e1m2fn(-max_)
+    obj.nexp = 2
+    obj.nmant = 1
+    obj.iexp = obj.nexp
+    obj.maxexp = 3
+    obj.minexp = 0
+    obj.precision = 0
+    obj.resolution = float4_e1m2fn(1.0)
+    # pylint: disable=protected-access
+    obj._machar = _Float4E1m2fnMachArLike()
+    tiny = obj._machar.smallest_normal
+    if not hasattr(obj, "tiny"):
+      obj.tiny = tiny
+    if not hasattr(obj, "smallest_normal"):
+      obj.smallest_normal = tiny
+    obj.smallest_subnormal = obj._machar.smallest_subnormal
+
+    float_to_str = str
+    obj._str_tiny = float_to_str(tiny)
+    obj._str_smallest_normal = float_to_str(tiny)
+    obj._str_smallest_subnormal = float_to_str(obj.smallest_subnormal)
+    obj._str_max = float_to_str(obj.max)
+    obj._str_epsneg = float_to_str(obj.epsneg)
+    obj._str_eps = float_to_str(obj.eps)
+    obj._str_resolution = float_to_str(obj.resolution)
+    # pylint: enable=protected-access
+    return obj
+
 
   @staticmethod
   def _float6_e2m3fn_finfo():
